@@ -23,7 +23,7 @@
 |*    Port 4                  leftLightSensor     Light Sensor           floor facing                     *|
 \*--------------------------------------------------------------------------------------------------------*/
 
-// Globular variables
+// GLOBAL VARIABLE ASSIGNMENT //
 int sidedistance = 0; // Distance reading from left-facing ultrasonic sensor
 int frontdistance = 0; // Distance reading from forward-facing ultrasonic sensor
 int leftlight = 0; // Light level reading from the left light sensor
@@ -47,9 +47,11 @@ char route[128]; // Init with 128 so there is plenty of space for the route
 
 int routeIndex = 0; // Keeps track of the next index in the route to write to
 
+
+// FUNCTIONS //
+
 // Displays sensors/program data on the NXT screen
 void displaysensors(){
-	
 	displayCenteredTextLine(0, route); // Display the route as it is recorded, for debugging
 
 	// Sensor value readout, for debugging
@@ -63,55 +65,51 @@ void displaysensors(){
 	//displayCenteredTextLine(7, "%d", rightlight);   /* to LCD screen using %d.     */
 }
 
+
 // Reads all of the sensors and stores their values in the respective global variables
 void readsensors(){
 	sidedistance = SensorValue(sideSensor); // Store side Sonar Sensor values in 'sonarValueSide' variable.
 	frontdistance = SensorValue(frontSensor); // Store front Sonar Sensor values in 'sonarValueFront' variable.
 	leftlight = SensorValue(leftLightSensor); // Store left Light Sensor values in 'lightValueLeft' variable.
 	rightlight = SensorValue(rightLightSensor); // Store right Light Sensor values in 'lightValueRight' variable.
-	displaysensors();
+	// displaysensors();  // For debugging
 }
+
 
 // Drives the robot forwards, following a line, until it reaches an intersection
 void drive(){
-	
-	// Forever (until return statement)
 	while(true){
-
-		// Read light and ultrasonic sensors
 		readsensors();
 
 		// If both sensors detect black, the robot has reached an intersection
-		if((leftlight < thresholdLight)&&(rightlight < thresholdLight)){
-		
-			// Turn off motors and exit the loop
-			motor(leftmotor) = 0;
-			motor(rightmotor) = 0;
-			return;
+		if((leftlight < thresholdLight) && (rightlight < thresholdLight)){
+			return;  // Exit the loop
 		}
 
-		// Use relative light level of both sensors with some fancy maths to adjust motor speeds
-		// so that the robot follows the line - really simple but suprisingly robust!
+		// Set both motor speeds to a function of both light levels
 		motor(leftmotor) = (leftlight - rightlight / 2 + 2) / 1.5;
 		motor(rightmotor) = (rightlight - leftlight / 2 + 2) / 1.5;
 
 	}
 }
 
-// Turns the robot 90 degrees to the left (anticlockwise), on the spot
+
+// Turns the robot 90 degrees anticlockwise
 void turnLeft(){
 
 	// Start turning left
 	motor(rightmotor) = 3;
 	motor(leftmotor) = -3;
 
-	wait1Msec(4000); // Wait a few seconds to allow the sensors to clear the line they were following
+	wait1Msec(4000);  // Allows robot sensors to clear the line originally following
 
-	// Continue turning until right sensor hits a line
 	int peaklight = 0;
 
+	// Continue turning until right sensor hits a line
+	// peaklight is a hold value of the lightest leftlight sensor reading
+	// This prevents overshoot due to limited sensor readings
 	while(rightlight > peaklight - thresholdDiff){
-		
+
 		readsensors();
 
 		if(leftlight > peaklight){
@@ -119,13 +117,14 @@ void turnLeft(){
 		}
 	}
 
-	// Disable motors
+	// Stop turning
 	motor(rightmotor) = 0;
 	motor(leftmotor) = 0;
 
 }
 
-// Turns the robot 90 degrees to the right (clockwise), on the spot
+
+// Turns the robot 90 degrees clockwise
 void turnRight(){
 
 	readsensors();
@@ -134,11 +133,13 @@ void turnRight(){
 	motor(rightmotor) = -3;
 	motor(leftmotor) = 3;
 
-	wait1Msec(4000); // Wait a few seconds to allow the sensors to clear the line they were following
+	wait1Msec(4000);  // Allows robot sensors to clear the line originally following
 
-	// Continue turning until left sensor hits a line
 	int peaklight = 0;
 
+	// Continue turning until left sensor hits a line
+	// peaklight is a hold value of the lightest rightlight sensor reading
+	// This prevents overshoot due to limited sensor readings
 	while(leftlight > peaklight - thresholdDiff){
 		
 		readsensors();
@@ -148,11 +149,12 @@ void turnRight(){
 		}
 	}
 
-	// Stop motors
+	// Stop turning
 	motor(rightmotor) = 0;
 	motor(leftmotor) = 0;
 
 }
+
 
 // Checks the ultrasonic sensors to determine which direction the robot should move in, and turns
 // the robot to face that direction if necessary
@@ -192,6 +194,7 @@ void checkDir(){
 	}
 }
 
+
 // Simplifies the route by cutting off any detours using a repeatedly applied set of rules,
 // resulting in the shortest route from the start position to the finish.
 // Only two simple rules are needed:
@@ -214,7 +217,7 @@ void simplifyRoute(){
 
 		changed = false; // Reset the change tracker for the next pass
 		
-		// === A single pass of the pattern ===
+		// --- A single pass of the pattern ---
 
 		while(i < length){ // While there are still more moves to check
 		
@@ -249,7 +252,7 @@ void simplifyRoute(){
 
 		}
 		
-		// ====================================
+		// ---
 
 		// Now the pass is complete, the new route becomes the old route and the process repeats
 		for(int k = 0; k < length; k++) route[k] = newRoute[k];
@@ -258,10 +261,12 @@ void simplifyRoute(){
 
 }
 
-// Runs when the program is started
+// END OF FUNCTIONS //
+
+
 task main(){
 
-	// === Maze navigation using the left-hand rule ===
+	// --- Maze navigation using the left-hand rule ---
 	
 	while(true){
 
@@ -295,7 +300,7 @@ task main(){
 		checkDir(); // Decide where to go next
 	}
 	
-	// === Return to start along shortest path ===
+	// --- Return to start along shortest path ---
 	
 	// Turn around 180 degrees to face the other way
 	turnRight();
@@ -322,7 +327,7 @@ task main(){
 		else if(route[i] == 'r') s = "r";
 		else continue; // Ignore zeros
 
-		// Display the current move in nice big lettering
+		// Display the current move on screen
 		displayCenteredBigTextLine(3, s);
 
 		readsensors();
@@ -343,7 +348,7 @@ task main(){
 	motor(rightmotor) = 0;
 	motor(leftmotor) = 0;
 
-	// Much success!
+	// Success!
 	playSound(soundUpwardTones);
 	wait1Msec(500);
 	playSound(soundDownwardTones);
