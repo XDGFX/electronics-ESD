@@ -252,8 +252,6 @@ void simplifyRoute(){
 
 		}
 		
-		// ---
-
 		// Now the pass is complete, the new route becomes the old route and the process repeats
 		for(int k = 0; k < length; k++) route[k] = newRoute[k];
 
